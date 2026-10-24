@@ -1,0 +1,604 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <title>钱生万象 · 人生模拟器</title>
+  <style>
+    :root {
+      --ink: #5b4650;
+      --muted: #aa8f95;
+      --cream: #fff8f1;
+      --paper: #fffdf9;
+      --line: #f0d8cf;
+      --coral: #ef7378;
+      --coral-deep: #d75364;
+      --orange: #f5ab4b;
+      --mint: #8fd8b0;
+      --sky: #9ed9e8;
+      --purple: #9b83d7;
+      --shadow: 0 18px 45px rgba(122, 73, 77, .18);
+    }
+
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      padding: 18px;
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      color: var(--ink);
+      background:
+        radial-gradient(circle at 18% 10%, rgba(247, 183, 137, .22), transparent 28%),
+        linear-gradient(135deg, #fde9e3 0%, #fdf5e9 48%, #eaf7ee 100%);
+    }
+
+    button { font: inherit; }
+    .phone {
+      position: relative;
+      width: min(100%, 390px);
+      height: min(840px, calc(100vh - 36px));
+      min-height: 680px;
+      overflow: hidden;
+      border: 9px solid #3c2e3e;
+      border-radius: 34px;
+      background: var(--cream);
+      box-shadow: 0 26px 70px rgba(70, 40, 52, .28);
+    }
+
+    .phone::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      pointer-events: none;
+      opacity: .28;
+      background-image:
+        linear-gradient(30deg, rgba(224, 186, 161, .13) 12%, transparent 12.5%, transparent 87%, rgba(224, 186, 161, .13) 87.5%, rgba(224, 186, 161, .13)),
+        linear-gradient(150deg, rgba(224, 186, 161, .13) 12%, transparent 12.5%, transparent 87%, rgba(224, 186, 161, .13) 87.5%, rgba(224, 186, 161, .13));
+      background-size: 34px 34px;
+    }
+
+    .topbar, .hud, .left-rail, .right-rail, .bottom-nav { position: relative; z-index: 2; }
+    .topbar { height: 36px; padding: 7px 12px 0; display: flex; justify-content: space-between; font-size: 10px; color: #c09ea0; }
+    .topbar .live { display: inline-flex; gap: 5px; align-items: center; }
+    .live-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--coral); box-shadow: 0 0 0 3px rgba(239,115,120,.14); }
+
+    .hud { height: 92px; padding: 0 13px; display: grid; grid-template-columns: 48px 1fr 74px; gap: 8px; align-items: start; }
+    .badge { width: 44px; height: 44px; border-radius: 14px 14px 16px 6px; display: grid; place-items: center; font-size: 25px; color: #fff; background: linear-gradient(145deg, #f8c56b, #ec6d65); box-shadow: 0 5px 0 #d65e61; }
+    .hud-center { display: grid; gap: 8px; }
+    .hud-row { display: flex; align-items: center; gap: 7px; }
+    .pill { height: 25px; padding: 0 9px; display: inline-flex; align-items: center; gap: 5px; border: 2px solid #edb7b3; border-radius: 99px; background: #fffdf9; font-size: 12px; font-weight: 700; }
+    .pill.money { border-color: #b9ddb1; color: #6d9561; }
+    .pill .icon { font-size: 15px; }
+    .family-name { justify-self: center; width: fit-content; padding: 6px 17px 7px; border: 2px solid #f2b772; border-radius: 50%; background: #fffdf9; color: #9b5e50; font-size: 13px; font-weight: 700; box-shadow: 0 3px 0 rgba(226, 153, 83, .18); }
+    .date-card { justify-self: end; width: 68px; text-align: center; border: 2px solid #ea9d76; border-radius: 10px; background: #fff2ea; overflow: hidden; box-shadow: 0 3px 0 rgba(222, 135, 96, .18); }
+    .date-card b { display: block; padding: 2px 0; font-size: 10px; color: #d47a66; }
+    .date-card strong { display: block; padding: 2px; font-size: 17px; color: #c95362; background: #fffdf9; }
+
+    .playfield { position: absolute; inset: 128px 0 76px; }
+    .left-rail, .right-rail { position: absolute; top: 4px; display: grid; gap: 12px; }
+    .left-rail { left: 8px; }
+    .right-rail { right: 8px; }
+    .rail-btn { width: 48px; min-height: 54px; padding: 4px 2px; border: 0; color: #99666c; background: transparent; cursor: pointer; text-align: center; font-size: 10px; font-weight: 700; }
+    .rail-icon { width: 36px; height: 36px; margin: 0 auto 2px; display: grid; place-items: center; border-radius: 12px 12px 10px 4px; background: #fff1ce; border: 2px solid #f0bf74; box-shadow: 0 3px 0 rgba(216, 145, 92, .2); font-size: 20px; }
+    .rail-btn:nth-child(2) .rail-icon { background: #fff8dc; border-color: #e8c66d; }
+    .rail-btn:nth-child(3) .rail-icon { background: #ffe3e4; border-color: #efaaae; }
+    .rail-btn:nth-child(4) .rail-icon { background: #eadff9; border-color: #b9a2e1; }
+    .rail-btn:hover .rail-icon, .rail-btn:focus-visible .rail-icon { transform: translateY(-2px); }
+
+    .center-stage { position: absolute; inset: 82px 0 80px; display: grid; place-items: center; }
+    .money-orbit { position: absolute; width: 198px; height: 198px; border-radius: 50%; border: 1px dashed rgba(221, 168, 141, .32); }
+    .money-orbit::before, .money-orbit::after { content: ""; position: absolute; width: 10px; height: 10px; border-radius: 50%; background: #f3bf77; box-shadow: 0 0 0 4px rgba(243,191,119,.16); }
+    .money-orbit::before { top: 24px; left: 20px; }
+    .money-orbit::after { right: 15px; bottom: 27px; background: #9dd5a7; box-shadow: 0 0 0 4px rgba(157,213,167,.18); }
+    .family-viewport { position: relative; width: calc(100% - 104px); height: min(100%, 360px); overflow: hidden; touch-action: none; }
+    .people { position: absolute; left: 50%; top: 50%; display: grid; justify-items: center; gap: 14px; width: max-content; min-width: 230px; transform-origin: center; cursor: grab; user-select: none; }
+    .people.dragging { cursor: grabbing; }
+    .family-couple { display: flex; align-items: center; justify-content: center; gap: 12px; }
+    .family-children { display: flex; flex-wrap: wrap; justify-content: center; align-items: start; gap: 8px; width: max(220px, 100%); padding-top: 10px; border-top: 1px solid #e8cfc5; }
+    .family-branch { display: grid; justify-items: center; gap: 8px; }
+    .person { position: relative; width: 70px; text-align: center; }
+    .avatar { width: 58px; height: 58px; margin: auto; display: grid; place-items: center; border: 4px solid #fff; border-radius: 50%; font-size: 31px; box-shadow: 0 6px 0 rgba(173, 118, 129, .16); }
+    .person:nth-child(1) .avatar { background: #9ed9e8; }
+    .person:nth-child(2) .avatar { background: #ffd1a1; }
+    .person:nth-child(3) .avatar { background: #e9b8cf; }
+    .person-name { margin-top: 5px; font-size: 10px; color: #8e6a6b; }
+    .rate { display: inline-flex; align-items: center; gap: 2px; padding: 2px 5px; border-radius: 99px; background: #fffdf9; border: 1px solid #e7c5bd; color: #68996d; font-size: 9px; white-space: nowrap; }
+    .age { position: absolute; top: -2px; right: 0; width: 19px; height: 19px; display: grid; place-items: center; border-radius: 50%; background: #5d9fd2; color: #fff; font-size: 9px; font-weight: 700; }
+    .person:nth-child(2) .age { background: #eb7c7e; }
+    .person:nth-child(3) .age { background: #9d80d4; }
+
+    .float-tag { position: absolute; top: 5px; left: 50%; transform: translateX(-50%); padding: 5px 11px; border-radius: 99px; background: #fff7d9; color: #a97153; border: 1px solid #edcc87; font-size: 10px; white-space: nowrap; }
+    .float-tag b { color: #d87565; }
+
+    .location { position: absolute; left: 13px; bottom: 24px; display: grid; gap: 6px; color: #c26b75; font-size: 11px; font-weight: 700; }
+    .zoom { display: flex; align-items: center; gap: 5px; }
+    .zoom button { width: 21px; height: 21px; border: 1px solid #edc1ad; border-radius: 7px; background: #fffdf9; color: #ba786f; cursor: pointer; }
+    .zoom-track { width: 65px; height: 6px; border-radius: 99px; background: #edd6c5; }
+    .zoom-track span { display: block; width: 45%; height: 100%; border-radius: inherit; background: #df9b75; }
+
+    .bottom-nav { position: absolute; inset: auto 0 0; height: 82px; padding: 10px 7px 8px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 2px; border-top: 2px solid #f1ddce; background: rgba(255, 246, 238, .92); backdrop-filter: blur(8px); }
+    .nav-btn { position: relative; border: 0; background: transparent; color: #9d7e83; font-size: 10px; font-weight: 700; cursor: pointer; display: grid; justify-items: center; align-content: center; gap: 2px; border-radius: 13px; }
+    .nav-btn .nav-icon { width: 42px; height: 32px; display: grid; place-items: center; border-radius: 50%; font-size: 21px; }
+    .nav-btn.active { color: #c55765; }
+    .nav-btn.active .nav-icon { background: #c6efb9; box-shadow: 0 3px 0 rgba(107, 166, 92, .18); }
+    .nav-btn:hover, .nav-btn:focus-visible { background: rgba(246, 208, 191, .22); }
+    .nav-dot { position: absolute; top: 3px; right: 14px; min-width: 16px; height: 16px; padding: 0 4px; display: grid; place-items: center; border-radius: 99px; background: #e86871; color: #fff; font-size: 9px; }
+
+    .event-modal { position: absolute; z-index: 10; inset: 52px 18px 104px; display: flex; flex-direction: column; justify-content: center; gap: 10px; padding: 10px 0; }
+    .event-modal[hidden] { display: none; }
+    .scrim { position: absolute; z-index: -1; inset: -52px -18px -104px; background: rgba(61, 46, 57, .62); }
+    .event-card { padding: 14px 14px 12px; border: 4px solid #f1b76b; border-radius: 18px; background: #fffdf9; box-shadow: 0 8px 0 rgba(212, 145, 78, .28); }
+    .event-title { margin: 0 0 12px; text-align: center; font-size: 20px; color: #6b5560; }
+    .event-copy { display: grid; grid-template-columns: 76px 1fr; gap: 9px; align-items: center; padding: 12px 9px; border-radius: 12px; background: #fff7f0; }
+    .event-character { width: 66px; height: 66px; display: grid; place-items: center; border: 4px solid #fff; border-radius: 50%; background: #afdced; font-size: 37px; box-shadow: 0 4px 0 rgba(115, 160, 181, .18); }
+    .event-copy p { margin: 0; font-size: 13px; line-height: 1.6; color: #765d68; }
+    .event-copy p b { color: #d65f66; }
+    .choice { width: 100%; padding: 11px 12px; border: 2px solid #f0c29d; border-radius: 12px; background: #fffdf9; color: #6c5965; cursor: pointer; font-size: 13px; font-weight: 700; box-shadow: 0 3px 0 rgba(226, 163, 118, .16); }
+    .choice:hover, .choice:focus-visible { border-color: var(--coral); background: #fff3ec; transform: translateY(-1px); }
+    .choice small { display: block; margin-top: 3px; font-size: 10px; color: #a98884; font-weight: 400; }
+    .event-hint { text-align: center; color: #f9e8d8; font-size: 10px; }
+
+    .panel { position: absolute; z-index: 5; inset: 0 0 82px; padding: 20px 56px 20px; overflow: auto; background: rgba(255, 248, 241, .96); }
+    .panel[hidden] { display: none; }
+    .panel h2 { margin: 0 0 4px; font-size: 20px; color: #6b5560; }
+    .panel-subtitle { margin: 0 0 16px; color: var(--muted); font-size: 11px; }
+    .metric-grid { display: grid; gap: 10px; grid-template-columns: repeat(2, 1fr); }
+    .metric { padding: 12px; border: 1px solid var(--line); border-radius: 14px; background: #fffdf9; }
+    .metric-label { color: var(--muted); font-size: 10px; }
+    .metric-value { margin-top: 3px; font-size: 20px; font-weight: 800; color: #775663; }
+    .metric-delta { margin-top: 3px; color: #76a774; font-size: 10px; }
+    .list { display: grid; gap: 9px; margin-top: 14px; }
+    .list-row { display: grid; grid-template-columns: 34px 1fr auto; gap: 8px; align-items: center; padding: 10px; border-bottom: 1px solid var(--line); }
+    .list-icon { width: 30px; height: 30px; display: grid; place-items: center; border-radius: 9px; background: #fff0d8; }
+    .list-row b { display: block; font-size: 12px; }
+    .list-row span { display: block; margin-top: 2px; font-size: 10px; color: var(--muted); }
+    .list-row strong { font-size: 12px; color: #d16468; }
+    .progress { height: 9px; overflow: hidden; border-radius: 99px; background: #f1e1d7; }
+    .progress span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, #f2ad59, #ee7476); }
+    .panel-footer { margin-top: 16px; padding: 12px; border-radius: 12px; background: #fff3df; color: #96715c; font-size: 11px; line-height: 1.5; }
+    .reset-btn { margin-top: 18px; padding: 9px 14px; border: 1px solid #e9b6a1; border-radius: 99px; background: #fffdf9; color: #ba6c68; cursor: pointer; }
+    .toast { position: absolute; z-index: 20; left: 50%; bottom: 93px; transform: translate(-50%, 16px); opacity: 0; pointer-events: none; padding: 8px 12px; border-radius: 99px; background: #6e5662; color: #fff; font-size: 11px; transition: .25s ease; white-space: nowrap; }
+    .toast.show { opacity: 1; transform: translate(-50%, 0); }
+    .sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0,0,0,0); white-space: nowrap; border: 0; }
+    .setup-modal { position:absolute; z-index:12; inset:28px 16px 90px; display:flex; align-items:center; justify-content:center; }
+    .setup-modal[hidden] { display:none; }
+    .setup-card { width:100%; max-height:100%; overflow:auto; padding:18px 15px 16px; border:4px solid #f1b76b; border-radius:18px; background:#fffdf9; box-shadow:0 8px 0 rgba(212,145,78,.28); }
+    .setup-card h2 { margin:0 0 4px; text-align:center; font-size:21px; color:#6b5560; }
+    .setup-card .subtitle { margin:0 0 13px; text-align:center; font-size:11px; color:var(--muted); }
+    .setup-section { margin-top:12px; }
+    .setup-label { display:block; margin-bottom:6px; color:#8d6870; font-size:11px; font-weight:700; }
+    .name-input { width:100%; height:38px; padding:0 10px; border:1px solid #d9c7bd; border-radius:6px; background:#fffdf9; color:#3e3736; font:inherit; }
+    .option-grid { display:grid; grid-template-columns:repeat(3,1fr); gap:7px; }
+    .setup-option { min-height:47px; padding:7px 4px; border:2px solid #f0d0bb; border-radius:11px; background:#fffaf5; color:#785e68; cursor:pointer; font-size:11px; font-weight:700; }
+    .setup-option[aria-pressed="true"] { border-color:#e87c78; background:#fff0e9; box-shadow:0 3px 0 rgba(226,145,118,.18); color:#c55765; }
+    .start-btn { width:100%; margin-top:15px; padding:11px; border:0; border-radius:12px; background:linear-gradient(135deg,#ef777b,#f2aa54); color:#fff; cursor:pointer; font-size:14px; font-weight:800; box-shadow:0 4px 0 rgba(201,91,91,.24); }
+    .start-btn:disabled { opacity:.55; cursor:not-allowed; }
+    .life-summary { display:flex; justify-content:center; flex-wrap:wrap; gap:6px; margin-top:9px; color:#a0776c; font-size:10px; }
+    .life-summary span { padding:4px 7px; border-radius:99px; background:#fff4de; }
+    .scrim.setup-scrim { inset:-28px -16px -90px; }
+    .event-meta { display:flex; justify-content:space-between; margin:6px 3px 0; color:#ae7c6c; font-size:10px; }
+    .choice-row { display:grid; gap:8px; }
+    .choice-row .choice { text-align:left; }
+    .choice-row .choice b { float:right; color:#d7736d; font-size:11px; }
+    .stage-empty { position:absolute; inset:0; display:grid; place-items:center; color:#a98785; font-size:12px; text-align:center; padding:0 60px; }
+    .stage-empty[hidden] { display:none; }
+    .death-modal { position:absolute; z-index:13; inset:45px 18px 110px; display:flex; align-items:center; justify-content:center; }
+    .death-modal[hidden] { display:none; }
+    .death-card { padding:20px 16px; border:4px solid #bda6ce; border-radius:18px; background:#fffdf9; text-align:center; box-shadow:0 8px 0 rgba(120,91,139,.2); }
+    .death-card h2 { margin:0 0 8px; color:#715678; }
+    .death-card p { margin:0; color:#8f778c; font-size:12px; line-height:1.6; }
+    .death-card button { margin-top:13px; padding:9px 15px; border:1px solid #c6a8d2; border-radius:99px; background:#f9effa; color:#805c8d; cursor:pointer; font-weight:700; }
+    .person.child .avatar { background:#ffe0a8; }
+    .person.partner .avatar { background:#f3bdd2; }
+    .person.grave { opacity:.45; filter:grayscale(.8); }
+
+    @media (max-width: 420px) {
+      body { padding: 0; }
+      .phone { height: 100vh; min-height: 640px; border-width: 0; border-radius: 0; }
+    }
+  </style>
+</head>
+<body>
+  <main class="phone" id="app" aria-label="钱生万象人生模拟器">
+    <div class="topbar"><span class="live"><i class="live-dot"></i>人生实时演算</span><span>UID: 6yK-MpMN-V1.0</span></div>
+    <header class="hud">
+      <div class="badge" aria-label="成就等级">🏆</div>
+      <div class="hud-center">
+        <div class="hud-row"><span class="pill"><span class="icon">💗</span><span id="heartValue">1</span></span><span class="pill money"><span class="icon">💵</span><span id="cashValue">24.5万</span><span id="cashDelta" style="color:#78a96c;font-size:10px">+474</span></span><span class="pill" style="border-color:#c8b4e4;color:#8065a0"><span class="icon">🎂</span><span id="ageValue">22岁</span></span></div>
+        <div class="family-name" id="familyName">家庭人生 ✎</div>
+      </div>
+      <div class="date-card"><b id="yearValue">2030</b><strong id="monthValue">7月</strong></div>
+    </header>
+
+    <section class="playfield" id="playfield" aria-label="人生地图">
+      <aside class="left-rail" aria-label="左侧功能">
+        <button class="rail-btn" data-toast="成就徽章已点亮"><span class="rail-icon">🏅</span>成就</button>
+        <button class="rail-btn" data-toast="偏好设置已打开"><span class="rail-icon">⚙</span>设置</button>
+        <button class="rail-btn" data-toast="财富技能树：理财、创业、投资"><span class="rail-icon">💡</span>技能</button>
+        <button class="rail-btn" data-toast="兑换码：MONEY-LIFE"><span class="rail-icon">🎁</span>兑换</button>
+      </aside>
+      <aside class="right-rail" aria-label="右侧功能">
+        <button class="rail-btn" id="eventRail"><span class="rail-icon">✎</span>新事件</button>
+        <button class="rail-btn" id="pauseRail"><span class="rail-icon">Ⅱ</span><span id="pauseLabel">暂停</span></button>
+        <button class="rail-btn" id="advanceRail"><span class="rail-icon">⏩</span>过一年</button>
+        <button class="rail-btn" data-toast="人生档案已保存"><span class="rail-icon">▣</span>档案</button>
+        <button class="rail-btn" data-toast="公告：本月通胀率 2.1%"><span class="rail-icon">▤</span>公告</button>
+      </aside>
+
+      <div class="center-stage" id="centerStage">
+        <div class="float-tag">当前现金流 <b id="incomeTag">+0/秒</b></div>
+        <div class="money-orbit" aria-hidden="true"></div>
+        <div class="family-viewport" id="familyViewport" aria-label="可移动家庭关系图"><div class="people" id="people"></div></div>
+        <div class="stage-empty" id="stageEmpty" hidden>开始一段新人生<br>认识的人会逐渐加入这棵财富树</div>
+      </div>
+
+      <div class="location"><button type="button" id="resetCanvas" style="border:0;background:transparent;color:inherit;padding:0;text-align:left;cursor:pointer">📍 复位</button><div class="zoom"><button type="button" id="zoomOut">−</button><div class="zoom-track"><span id="zoomFill"></span></div><button type="button" id="zoomIn">＋</button></div></div>
+
+      <section class="panel" id="assetPanel" hidden>
+        <h2>资产</h2><p class="panel-subtitle">把每一次选择，变成下一次现金流。</p>
+        <div class="metric-grid"><div class="metric"><div class="metric-label">可用现金</div><div class="metric-value" id="assetCash">24.5万</div><div class="metric-delta">受事件结算影响</div></div><div class="metric"><div class="metric-label">净资产</div><div class="metric-value" id="netWorth">58.2万</div><div class="metric-delta">包含现金与持有资产</div></div><div class="metric"><div class="metric-label">劳动收入</div><div class="metric-value" id="assetIncome">0/秒</div><div class="metric-delta">工作事件可能提高收入</div></div><div class="metric"><div class="metric-label">财商经验</div><div class="metric-value" id="skillValue">0</div><div class="metric-delta">选择与经历共同积累</div></div></div>
+        <div class="list"><div class="list-row"><span class="list-icon">🪙</span><div><b>现金储备</b><span>随事件与生活支出变化</span></div><strong id="cashAssetRow">0.0万</strong></div><div class="list-row"><span class="list-icon">📊</span><div><b>投资持仓</b><span>可能上涨，也可能亏损</span></div><strong id="investmentAssetRow">0.0万</strong></div><div class="list-row"><span class="list-icon">🛡️</span><div><b>风险保障</b><span id="insuranceStatus">尚未投保</span></div><strong id="healthStatus">健康 75</strong></div></div>
+      </section>
+
+      <section class="panel" id="careerPanel" hidden>
+        <h2>事业</h2><p class="panel-subtitle">收入曲线由选择组成，不是由运气决定。</p>
+        <div class="metric"><div style="display:flex;justify-content:space-between;align-items:center"><span class="metric-label">主业成长</span><b style="color:#d46d67">72%</b></div><div class="progress" style="margin-top:8px"><span style="width:72%"></span></div></div>
+        <div class="list"><div class="list-row"><span class="list-icon">💼</span><div><b>自由职业</b><span>现金流稳定 · 每秒 +260</span></div><strong>进行中</strong></div><div class="list-row"><span class="list-icon">🚀</span><div><b>创业副线</b><span>风险中等 · 预计回报 3.2x</span></div><strong>筹备</strong></div><div class="list-row"><span class="list-icon">🎓</span><div><b>财商学习</b><span>下一次升级需要 1,200 XP</span></div><strong>68%</strong></div></div>
+        <div class="panel-footer">提示：选择高成长事件，会提高收入上限；选择稳健方案，会降低破产风险。</div>
+      </section>
+
+      <section class="panel" id="familyPanel" hidden>
+        <h2>家庭</h2><p class="panel-subtitle">关系是隐形资产，复利也发生在这里。</p>
+        <div class="metric-grid"><div class="metric"><div class="metric-label">关系状态</div><div class="metric-value" id="relationshipValue">单身</div><div class="metric-delta" id="relationshipDetail">关系由事件发展</div></div><div class="metric"><div class="metric-label">子女</div><div class="metric-value" id="childrenValue">0</div><div class="metric-delta">成长随年龄推进</div></div></div>
+        <div class="list" id="familyRoster"></div>
+      </section>
+
+      <section class="panel" id="companyPanel" hidden>
+        <h2>公司</h2><p class="panel-subtitle">让你的钱开始为你工作。</p>
+        <div class="metric-grid"><div class="metric"><div class="metric-label">公司估值</div><div class="metric-value">126万</div><div class="metric-delta">↑ 14.2%</div></div><div class="metric"><div class="metric-label">现金跑道</div><div class="metric-value">18月</div><div class="metric-delta">安全</div></div></div>
+        <div class="list"><div class="list-row"><span class="list-icon">🌱</span><div><b>现金流引擎</b><span>每月自动结算</span></div><strong>+4.7万</strong></div><div class="list-row"><span class="list-icon">🧠</span><div><b>决策实验室</b><span>下一次升级：2 个事件</span></div><strong>80%</strong></div></div>
+        <button type="button" class="reset-btn" id="resetBtn">重置本局人生</button>
+      </section>
+
+        <div class="setup-modal" id="setupModal" role="dialog" aria-modal="true" aria-labelledby="setupTitle">
+        <div class="scrim setup-scrim"></div>
+        <div class="setup-card">
+          <h2 id="setupTitle">开启你的人生</h2><p class="subtitle">从 22 岁的一个人开始，关系与家庭由人生事件自然发生。</p>
+          <div class="setup-section"><label class="setup-label" for="startName">姓名</label><input id="startName" class="name-input" maxlength="12" value="林然" autocomplete="off"></div><div class="setup-section"><span class="setup-label">性别</span><div class="option-grid" data-group="gender"><button class="setup-option" data-value="male" aria-pressed="true">👨 男性</button><button class="setup-option" data-value="female" aria-pressed="false">👩 女性</button><button class="setup-option" data-value="other" aria-pressed="false">🧑 自定义</button></div></div>
+          <div class="setup-section"><span class="setup-label">人生难度</span><div class="option-grid" data-group="difficulty"><button class="setup-option" data-value="relaxed" aria-pressed="true">轻松</button><button class="setup-option" data-value="normal" aria-pressed="false">标准</button><button class="setup-option" data-value="hard" aria-pressed="false">挑战</button></div></div>
+          <div class="life-summary"><span id="setupSummary">单人开局 · 轻松</span><span>初始年龄 22 岁</span></div><button class="start-btn" id="startBtn">开始这段人生</button>
+        </div>
+      </div>
+
+      <div class="event-modal" id="eventModal" role="dialog" aria-modal="true" aria-labelledby="eventTitle" hidden>
+        <div class="scrim"></div>
+        <div class="event-card"><h2 class="event-title" id="eventTitle">买彩票</h2><div class="event-copy"><div class="event-character" id="eventEmoji">🧓🏻</div><p id="eventCopy">马边叔叔看到电视上有人买彩票中了百万大奖，<b>自己也想试试。</b></p></div></div>
+        <div class="event-meta"><span id="eventYearLabel">22岁 · 2030年7月</span><span id="eventTypeLabel">人生事件</span></div>
+        <div class="choice-row"><button type="button" class="choice" data-choice="one" id="choiceOne"></button><button type="button" class="choice" data-choice="two" id="choiceTwo"></button><button type="button" class="choice" data-choice="three" id="choiceThree"></button><button type="button" class="choice" data-choice="four" id="choiceFour"></button></div>
+        <div class="event-hint">每一次决定，都会改变你的现金流。</div>
+      </div>
+
+      <div class="death-modal" id="deathModal" role="dialog" aria-modal="true" hidden><div class="scrim"></div><div class="death-card"><div style="font-size:38px">🕯️</div><h2 id="deathTitle">这一生走到了终点</h2><p id="deathCopy">你完成了属于自己的财富旅程。<br>孩子会继承你的选择，继续长大。</p><button type="button" id="rebirthBtn">继续</button></div></div>
+    </section>
+
+    <nav class="bottom-nav" aria-label="主导航">
+      <button class="nav-btn active" data-tab="event"><span class="nav-icon">💗</span><span>事件</span><span class="nav-dot" id="eventDot">1</span></button>
+      <button class="nav-btn" data-tab="asset"><span class="nav-icon">⭐</span><span>资产</span></button>
+      <button class="nav-btn" data-tab="family"><span class="nav-icon">👨‍👩‍👧</span><span>家庭</span></button>
+      <button class="nav-btn" data-tab="career"><span class="nav-icon">📊</span><span>事业</span></button>
+      <button class="nav-btn" data-tab="company"><span class="nav-icon">👩‍💼</span><span>公司</span></button>
+    </nav>
+    <div class="toast" id="toast" aria-live="polite"></div>
+    <div class="sr-only" id="liveRegion" aria-live="polite"></div>
+  </main>
+
+  <script>
+    (() => {
+      const newLife = () => ({ name:'林然', dating:false, datePartner:null, partner:null, children:[], siblings:[], romanceCooldown:0, marriageCooldown:0, childCooldown:0, childfree:false, relationship:0, financialSkill:0, health:75, insured:false, recentEvents:[] });
+      const state = { cash: 0, netWorth: 0, year: 2030, month: 7, age: 22, income: 0, paused: false, zoom: 45, canvasX:0, canvasY:0, actorCursor:0, preferredActorId:null, tab: 'event', event: 0, eventResolved: false, started: false, dead: false, pendingHeir:null, legacy:[], generation:1, setup: { gender: 'male', difficulty: 'relaxed' }, life: newLife(), currentEvent:null };
+      const events = [
+        { id:'lottery', title:'街角彩票', type:'财富风险', emoji:'🎟️', weight:2, min:18, max:80, copy:'路边新开了一家彩票店，大奖很诱人。<b>每张彩票都可能中奖，也可能一分不剩。</b>', choices:[['买一张小额彩票','投入 0.2 万 · 中奖率 15%'],['冲一次大奖','投入 1 万 · 大奖率 3%'],['和朋友合买','投入 0.5 万 · 小概率分奖，也可能亏损'],['不买，保留现金','不承担损失 · 财商 +1']] },
+        { id:'work', title:'工作机会', type:'事业', emoji:'💼', weight:4, min:22, max:67, copy:'一位前同事联系你，有一个新项目需要人负责。<b>你可以争取成长、保障收入、学习转型或调整职业方向。</b>', choices:[['接下项目，争取升职','成功率 62% · 高回报也有压力'],['先谈清报酬与边界','成功率 78% · 稳健加薪'],['婉拒项目，参加培训','支出 0.3 万 · 能力成长'],['申请内部转岗','成功率 54% · 可能开启新方向']] },
+        { id:'invest', title:'市场波动', type:'投资', emoji:'📈', weight:3, min:20, max:80, copy:'你持有的资产近期大幅波动。<b>现在的决定会影响现金与长期净资产。</b>', choices:[['追加高波动资产','投入 2 万 · 盈亏幅度大'],['分散到稳健组合','投入 1 万 · 回报较低'],['暂时观望','无损益 · 保留流动性'],['卖出部分持仓','锁定部分收益或亏损 · 降低波动']] },
+        { id:'romance', title:'一次偶遇', type:'关系机会', emoji:'💌', weight:4, min:18, max:45, eligible:s=>!s.life.partner && !s.life.dating && s.life.romanceCooldown<=0, copy:'你在一次活动中遇到一位聊得来的人。<b>关系需要相处和回应，不会因为一次选择就必然成功。</b>', choices:[['主动交换联系方式','建立关系概率 48% · 需要投入时间'],['先在朋友群里相处','建立关系概率 30% · 节奏较慢'],['参加共同兴趣活动','建立关系概率 38% · 发展更自然'],['礼貌告别，保持边界','不发展关系 · 保留精力']] },
+        { id:'marriage', title:'筹备一场婚礼', type:'关系阶段', emoji:'💍', weight:2, min:20, max:55, eligible:s=>s.life.dating && !s.life.partner && s.life.marriageCooldown<=0, copy:'你们相处了一段时间，双方开始认真讨论结婚。预算、家人期待和共同储蓄都需要一起商量。<b>选定方案后仍要看双方意愿，婚礼花费不会保证关系结果。</b>', choices:[['简单登记与小聚','花费 0.2 万 · 更看重共同生活'],['办一场体面的婚礼','花费 2 万 · 仪式感强，储蓄减少'],['只登记，不办宴席','不额外花费 · 需要和家人沟通'],['先不结婚，继续相处','不花钱 · 关系稳定后再讨论']] },
+        { id:'child', title:'是否准备迎接孩子', type:'家庭阶段', emoji:'🍼', weight:3, min:22, max:44, eligible:s=>!!s.life.partner && !s.life.childfree && s.life.childCooldown<=0, copy:'{name} 与交往对象聊到生育计划。健康检查、照护时间、住房与收入都需要考虑，也要尊重双方是否准备好。', choices:[['先做检查并开始准备','花费 0.6 万 · 准备充分，成功机会较高'],['现在尝试，边走边计划','成功机会一般 · 预算压力较大'],['暂缓一年再认真讨论','暂不尝试 · 关系与计划保留弹性'],['决定不生育','不再触发生育计划 · 关系仍可继续']] },
+        { id:'health', title:'健康与工作', type:'生活', emoji:'🩺', weight:3, min:18, max:81, copy:'最近的体检提醒你需要调整生活节奏。<b>时间和收入都要做取舍。</b>', choices:[['减少加班，规律运动','花费 0.4 万 · 健康改善'],['购买保险并继续工作','花费 0.8 万 · 降低意外风险'],['保持现状','无花费 · 健康风险不变'],['请假休息并复查','短期收入受影响 · 健康风险下降']] },
+        { id:'expense', title:'意外支出', type:'生活', emoji:'🧾', weight:2, min:18, max:81, copy:'家里电器突然坏了，维修报价超出预期。<b>你需要决定怎么处理这笔支出。</b>', choices:[['直接更换新的','支出 1.2 万 · 省心耐用'],['维修旧设备','支出 0.4 万 · 有再次损坏风险'],['暂时不处理','可能产生后续损失'],['购买二手替代品','支出 0.2 万 · 省钱但耐用性未知']] },
+        { id:'partner-work', title:'工作出现新机会', type:'事业', emoji:'💼', weight:3, min:20, max:72, actorKind:'partner', copy:'{name} 收到新的工作安排，收入、压力和陪伴时间都可能改变。<b>仔细权衡职业发展、日常安排和现金流。</b>', choices:[['接受晋升机会','收入可能提高 · 压力增加'],['协商弹性工时','收入小幅变化 · 可支配时间增加'],['寻找更合适的新岗位','转换风险 · 可能改善发展'],['暂时留在原岗位','稳定 · 暂无变化']] },
+        { id:'partner-health', title:'身体发出提醒', type:'生活', emoji:'🩺', weight:2, min:20, max:80, actorKind:'partner', copy:'{name} 最近工作太累，身体发出了提醒。<b>需要重新安排时间和预算。</b>', choices:[['安排休养与检查','支出 0.8 万 · 健康改善'],['先调整日常作息','支出 0.2 万 · 温和改善'],['让工作继续优先','不花钱 · 健康风险增加'],['分担家务，让其休息','花费时间 · 压力下降']] },
+        { id:'child-interest', title:'新的兴趣', type:'成长', emoji:'🎨', weight:3, actorKind:'child', minChild:3, maxChild:12, copy:'{name} 最近对一件新事情特别投入，想把更多时间花在上面。', choices:[['报名兴趣课程','支出 0.6 万 · 兴趣成长'],['在家自学练习','支出较少 · 进展较慢'],['暂时不安排课程','省下预算 · 兴趣可能淡下来'],['参加体验活动','支出 0.2 万 · 先尝试再决定']] },
+        { id:'child-school', title:'学校里的选择', type:'孩子成长', emoji:'🎒', weight:3, actorKind:'child', minChild:6, maxChild:17, copy:'{name} 遇到学习压力，也在考虑要不要参加课外活动。<b>不同安排会影响能力与状态。</b>', choices:[['优先补足薄弱科目','支出 0.5 万 · 学习进步'],['参加社团活动','关系与兴趣提升'],['留出休息时间','压力下降 · 成绩不变'],['和老师沟通学习计划','花费时间 · 找出压力来源']] },
+        { id:'child-future', title:'孩子规划未来', type:'孩子成长', emoji:'🧭', weight:3, actorKind:'child', minChild:15, maxChild:20, copy:'{name} 即将面对升学或就业，正在寻找适合自己的方向。', choices:[['准备继续升学','投入 1.2 万 · 学历机会增加'],['先找工作积累经验','收入更早开始 · 发展不确定'],['尝试职业技能路线','投入 0.5 万 · 技能就业机会'],['先实习体验不同岗位','收入不确定 · 更了解自己']] },
+        { id:'child-care', title:'来到新的生活阶段', type:'照护安排', emoji:'🧸', weight:5, actorKind:'child', minChild:0, maxChild:2, copy:'{name} 还很小，照护、陪伴和日常安排都需要投入。', choices:[['安排家庭照护','支出 0.4 万 · 陪伴时间更多'],['请家人帮忙照看','支出 0.8 万 · 照护压力降低'],['购买基础用品','支出 0.6 万 · 做好生活准备'],['采用简约照护','支出较少 · 需要投入更多时间']] },
+        { id:'adult-romance', title:'一段新的心动', type:'关系机会', emoji:'💌', weight:3, actorKind:'child', minChild:18, maxChild:40, eligibleActor:a=>!a.person.dating && !a.person.partner && a.person.romanceCooldown<=0, copy:'{name} 认识了一位聊得来的朋友，也在考虑如何回应这份好感。', choices:[['主动邀请对方约会','建立关系机会 48%'],['先从朋友做起','建立关系机会 28% · 节奏较慢'],['参加共同兴趣活动','建立关系机会 38%'],['暂时专注自己的计划','不发展关系 · 保留精力']] },
+        { id:'adult-marriage', title:'认真讨论未来', type:'关系阶段', emoji:'💍', weight:2, actorKind:'child', minChild:20, maxChild:45, eligibleActor:a=>a.person.dating && !a.person.partner && (a.person.marriageCooldown||0)<=0, copy:'{name} 与交往对象开始讨论未来。婚礼预算、生活安排和双方意愿都需要谈清楚。', choices:[['小型婚礼','花费 0.2 万 · 更看重共同生活'],['体面婚礼','花费 2 万 · 仪式感更强'],['简约登记','不办宴席 · 需要沟通家人期待'],['继续相处一段时间','暂不结婚 · 留待以后决定']] },
+        { id:'adult-family', title:'家庭计划', type:'家庭阶段', emoji:'🍼', weight:2, actorKind:'child', minChild:22, maxChild:44, eligibleActor:a=>!!a.person.partner && !a.person.partner.deceased && !a.person.childfree && (a.person.childCooldown||0)<=0, copy:'{name} 与交往对象开始讨论是否要孩子，也在衡量住房、照护安排与收入。', choices:[['支持体检与准备','支出 0.6 万 · 准备更充分'],['支持他们现在尝试','支出 1 万 · 结果有概率'],['建议再等几年','暂缓计划 · 继续商量'],['尊重不生育的选择','不再讨论生育 · 仍保持联系']] },
+        { id:'child-launch', title:'独立生活计划', type:'成长', emoji:'🚀', weight:2, actorKind:'child', minChild:18, maxChild:28, eligibleActor:a=>!a.person.independent, copy:'{name} 准备搬出去生活或开始自己的事业，需要决定如何使用家庭支持。', choices:[['提供启动资金','支出 2 万 · 机会较大，也有风险'],['提供有限的应急金','支出 0.8 万 · 风险较低'],['让 {name} 完全独立','不支出 · 成长更快'],['共同制定独立计划','花费时间 · 逐步搬出并控制风险']] },
+        { id:'housing', title:'租约即将到期', type:'居住', emoji:'🏠', weight:3, min:18, max:80, copy:'房东通知租约即将到期，附近租金也有变化。搬家成本、通勤和储蓄都需要一起考虑。', choices:[['续租一年','支出增加 0.6 万 · 省去搬家麻烦'],['搬到更远的房子','每年少支出 1 万 · 通勤时间增加'],['与人合租','支出减少 0.8 万 · 需要适应室友'],['尝试贷款购房','首付 8 万 · 长期支出与资产同时增加']] },
+        { id:'sidework', title:'下班后的空档', type:'副业', emoji:'🧑‍💻', weight:3, min:18, max:70, copy:'最近工作之外多出一些时间，有人邀请你接单，也可以休息、学习或经营小生意。', choices:[['接短期项目','成功率 58% · 可能多赚 1.8 万'],['开一个小网店','投入 1.2 万 · 盈亏都有可能'],['学习实用技能','支出 0.5 万 · 能力逐步积累'],['把时间留给休息','健康改善 · 本期没有额外收入']] },
+        { id:'emergency', title:'突发状况需要用钱', type:'风险管理', emoji:'🧯', weight:2, min:18, max:80, copy:'一件意外打乱了原本的预算。你可以动用储蓄、借款、保险或协商分期。', choices:[['动用应急储蓄','支出 1.5 万 · 不产生利息'],['短期借款周转','到账 1.5 万 · 后续偿还 1.8 万'],['申请保险理赔','成功率 55% · 处理需要时间'],['与对方协商分期','当期压力下降 · 后续仍需付款']] },
+        { id:'education', title:'进修还是积累经验', type:'职业发展', emoji:'📚', weight:3, min:18, max:55, copy:'行业开始变化，熟悉的经验仍然有用，但新的岗位要求也在提高。', choices:[['报名系统课程','支出 0.9 万 · 技能明显提升'],['争取承担新项目','成功率 52% · 有晋升机会也有压力'],['考取职业证书','支出 0.4 万 · 招聘竞争力增加'],['暂时不变，观察行业','保留现金 · 可能错过窗口']] },
+        { id:'market', title:'一笔投资传来消息', type:'投资', emoji:'📉', weight:3, min:20, max:80, copy:'市场出现新消息，持仓价格在短时间内明显波动。没有哪种决定能保证获利。', choices:[['追加资金摊平成本','投入 1.5 万 · 涨跌影响扩大'],['设置止损退出一半','可能锁定亏损 · 降低后续风险'],['分批持有观察','不追加资金 · 继续承担波动'],['转入低风险储蓄','可能错过反弹 · 资金更稳定']] }
+      ];
+
+      const $ = (sel) => document.querySelector(sel);
+      const $$ = (sel) => [...document.querySelectorAll(sel)];
+      const money = (n) => `${n.toFixed(1)}万`;
+      function paint() {
+        $('#cashValue').textContent = money(state.cash);
+        $('#assetCash').textContent = money(state.cash);
+        $('#netWorth').textContent = money(state.netWorth);
+        $('#assetIncome').textContent = `${state.income}/秒`;
+        $('#skillValue').textContent = state.life.financialSkill;
+        $('#cashAssetRow').textContent = money(state.cash);
+        $('#investmentAssetRow').textContent = money(Math.max(0,state.netWorth-state.cash));
+        $('#insuranceStatus').textContent = state.life.insured ? '长期保障已生效' : '尚未投保';
+        $('#healthStatus').textContent = `健康 ${state.life.health}`;
+        $('#cashDelta').textContent = `+${state.income}/秒`;
+        $('#yearValue').textContent = state.year;
+        $('#monthValue').textContent = `${state.month}月`;
+        $('#ageValue').textContent = `${state.age}岁`;
+        $('#incomeTag').textContent = `+${state.income}/秒`;
+        $('#zoomFill').style.width = `${state.zoom}%`;
+        if($('#people'))$('#people').style.transform=`translate(calc(-50% + ${state.canvasX}px),calc(-50% + ${state.canvasY}px)) scale(${state.zoom/45})`;
+        $('#pauseLabel').textContent = state.paused ? '继续' : '暂停';
+        $('#relationshipValue').textContent = state.life.partner ? '已婚' : state.life.dating ? '恋爱中' : '单身';
+        $('#relationshipDetail').textContent = state.life.partner ? '共同生活中' : state.life.dating ? `关系进展 ${state.life.relationship}/100` : '关系由事件发展';
+        const countDescendants=children=>children.reduce((sum,child)=>sum+1+countDescendants(child.children||[]),0);
+        $('#childrenValue').textContent = countDescendants(state.life.children);
+        $('#familyName').textContent = `家庭人生 ✎`;
+      }
+      function showToast(text) {
+        const el = $('#toast'); el.textContent = text; el.classList.add('show');
+        window.clearTimeout(showToast.timer); showToast.timer = window.setTimeout(() => el.classList.remove('show'), 4000);
+      }
+      function pickEvent() {
+        const selfActor = { id:'self', kind:'self', name:state.life.name||'林然', label:'', age:state.age, person:state.life };
+        const actors = [selfActor];
+        if(state.life.datePartner&&!state.life.datePartner.deceased)actors.push({id:'partner',kind:'partner',name:state.life.datePartner.name, label:'',age:state.life.datePartner.age||Math.max(18,state.age-(state.life.datePartner.ageGap||1)),person:state.life.datePartner});
+        if (state.life.partner && !state.life.partner.deceased) actors.push({ id:'partner', kind:'partner', name:state.life.partner.name, label:'', age:state.life.partner.age||Math.max(18,state.age-state.life.partner.ageGap), person:state.life.partner, familyOwner:state.life });
+        const addDescendantActors=(children,parentAge,parentPath='family')=>children.forEach((person,index)=>{const age=Math.max(0,parentAge-person.bornAt);const path=`${parentPath}/${person.id||index}`;actors.push({id:path,kind:'child',name:person.name,label:'',age,person,index});if(person.datePartner&&!person.datePartner.deceased)actors.push({id:`date:${path}`,kind:'partner',name:person.datePartner.name,label:'',age:person.datePartner.age||Math.max(18,age-(person.datePartner.ageGap||0)),person:person.datePartner});if(person.partner&&!person.partner.deceased)actors.push({id:`partner:${path}`,kind:'partner',name:person.partner.name,label:'',age:person.partner.age||Math.max(18,age-(person.partner.ageGap||0)),person:person.partner});if(person.children?.length)addDescendantActors(person.children,age,path);});
+        addDescendantActors(state.life.children,state.age);
+        addDescendantActors(state.life.siblings,state.age,'siblings');
+        for(let index=actors.length-1;index>=0;index--)if(actors[index].age>=82)actors.splice(index,1);
+        const preferredIndex=state.preferredActorId?actors.findIndex(actor=>actor.id===state.preferredActorId):-1;
+        const currentActor=actors[preferredIndex>=0?preferredIndex:state.actorCursor%actors.length];
+        state.preferredActorId=null;
+        state.actorCursor=(actors.indexOf(currentActor)+1)%Math.max(1,actors.length);
+        const candidates = [];
+        events.forEach(event => {
+          if (event.actorKind) {
+            if(currentActor.kind===event.actorKind && currentActor.age>=(event.minChild??event.min??0)&&currentActor.age<=(event.maxChild??event.max??120)&&(!event.eligibleActor||event.eligibleActor(currentActor))) candidates.push({...event,actor:currentActor});
+            return;
+          }
+          const actor=currentActor;const person=actor.person;const age=actor.age;
+          if(age<event.min||age>event.max)return;
+          if(event.id==='romance'&&(person.partner||person.dating||person.romanceCooldown>0))return;
+          if(event.id==='marriage'&&(!person.dating||person.partner||(person.marriageCooldown||0)>0))return;
+          if(event.id==='child'){const owner=actor.familyOwner||person;if(!owner.partner||owner.partner.deceased||owner.childfree||(owner.childCooldown||0)>0)return;}
+          candidates.push({...event,actor});
+        });
+        let pool = candidates.length ? candidates : events.filter(event => (event.actorKind==='child'&&currentActor.kind==='child'&&currentActor.age>=event.minChild&&currentActor.age<=event.maxChild)||(!event.actorKind&&['work','health','expense'].includes(event.id)&&currentActor.age>=event.min&&currentActor.age<=event.max)).map(event=>({...event,actor:currentActor}));
+        const recent = state.life.recentEvents.slice(-12);
+        const withoutRepeat = pool.filter(event => !recent.includes(`${event.id}:${event.actor.id}`));
+        if (withoutRepeat.length) pool = withoutRepeat;
+        const lastEvent = state.life.recentEvents[state.life.recentEvents.length - 1];
+        const differentFromLast = pool.filter(event => `${event.id}:${event.actor.id}` !== lastEvent);
+        if (differentFromLast.length) pool = differentFromLast;
+        const total = pool.reduce((sum,event) => sum + event.weight, 0);
+        let roll = Math.random() * total;
+        return pool.find(event => (roll -= event.weight) <= 0) || pool[0];
+      }
+      function loadEvent() {
+        const event = state.currentEvent || pickEvent();
+        state.currentEvent = event;
+        state.eventResolved = false;
+        $('#eventTitle').textContent = event.title.replaceAll('{name}',event.actor?.name||'成员');
+        $('#eventEmoji').textContent = event.emoji;
+        const name = event.actor?.name || '林然';
+        $('#eventCopy').innerHTML = event.copy.replaceAll('{name}',name);
+        ['one','two','three','four'].forEach((key,index) => { const button=$(`#choice${key[0].toUpperCase()}${key.slice(1)}`); const option=event.choices[index]; button.hidden=!option; if(option) button.innerHTML=`${option[0].replaceAll('{name}',name)}<small>${option[1].replaceAll('{name}',name)}</small>`; });
+        $('#eventYearLabel').textContent = `${name} · ${event.actor?.age ?? state.age}岁 · ${state.year}年${state.month}月`;
+        $('#eventTypeLabel').textContent = event.type;
+        $('#eventModal').hidden = false;
+        $('#eventDot').textContent = '1';
+      }
+      function settleEvent(event, choice) {
+        const rng = Math.random;
+        let message = '';
+        const actor = event.actor || { kind:'self', person:state.life, name:'我', age:state.age };
+        const person = actor.person;
+        const addCash = (cash, worth = cash) => { state.cash += cash; state.netWorth += worth; };
+        if (event.id === 'lottery') {
+          if (choice === 'one') { if (rng() < .15) { addCash(1.0,1.0); message = '小额彩票中奖了，扣除票价后净赚 1.0 万。'; } else { addCash(-.2,-.2); message = '没有中奖，损失彩票钱 0.2 万。'; } }
+          else if (choice === 'two') { if (rng() < .03) { addCash(39,39); message = '大奖命中！扣除成本后净赚 39 万。'; } else { addCash(-1,-1); message = '大奖没有出现，损失 1 万。'; } }
+          else if(choice==='three') { if(rng()<.08){addCash(2,2);message='合买中奖了，分得奖金 2 万。';}else{addCash(-.5,-.5);message='合买没有中奖，损失投入的 0.5 万。';} }
+          else { person.financialSkill=(person.financialSkill||0)+1; message = `${actor.name}保留了现金，财商经验 +1。`; }
+        } else if (event.id === 'work') {
+          if (choice === 'one') { if (rng() < .62) { addCash(3.5,3.5); state.income += 35; message = '项目成功，收入和履历都提升了。'; } else { addCash(-.8,-.8); message = '项目未达预期，投入的时间带来 0.8 万损失。'; } }
+          else if (choice === 'two') { if (rng() < .78) { addCash(1.4,1.4); state.income += 12; message = '谈妥了合理报酬，稳步增加收入。'; } else { message = '对方没有接受条件，但你避免了不划算的投入。'; } }
+          else if (choice === 'three') { addCash(-.3,-.3); person.financialSkill=(person.financialSkill||0)+3; message = '培训占用了预算，但新技能和财商经验都有提升。'; }
+          else if (choice === 'four') { if(rng()<.54){state.income+=18;message='内部转岗申请通过，工作方向改变，收入有所提升。';}else{message='这次没有合适的空缺，你保留了原岗位和收入。';} }
+          else { person.health=Math.min(100,person.health+4); message = '你保留了生活时间，收入没有变化，状态稍有改善。'; }
+        } else if (event.id === 'invest') {
+          if (choice === 'one') { if (rng() < .42) { addCash(2.5,5.5); message = '高波动资产上涨，净资产增加 5.5 万。'; } else { addCash(-3,-3); message = '市场下跌，追加投资亏损 3 万。'; } }
+          else if (choice === 'two') { if (rng() < .68) { addCash(.5,1.4); message = '分散组合获得温和回报。'; } else { addCash(-.8,-.8); message = '稳健组合也遇到回撤，亏损 0.8 万。'; } }
+          else if(choice==='three') { person.financialSkill=(person.financialSkill||0)+1; message = `${actor.name}选择观望，保留了流动性。`; }
+          else { if(rng()<.55){addCash(1,1);message='你卖出部分持仓，锁定了 1 万收益。';}else{addCash(-.6,-.6);message='卖出时价格已下跌，确认 0.6 万亏损，但降低了后续波动风险。';} }
+        } else if (event.id === 'romance' || event.id === 'adult-romance') {
+          person.romanceCooldown = 2;
+          const chance = choice === 'one' ? .48 : choice === 'two' ? (actor.kind==='child'?.28:.30) : choice==='three'?.38:0;
+          if (rng() < chance) { const gender=person.gender||state.setup.gender;const partnerEmoji=gender==='female'?'👨‍💼':'👩‍💻';const defaultName=['顾言','周宁','许知夏','陈屿','沈禾','江予'];const entered=window.prompt(`为${actor.name}认识的人取名`,defaultName[Math.floor(rng()*defaultName.length)]);person.dating = true; person.relationship = 20 + Math.floor(rng()*21); person.datePartner = { name:(entered||'周宁').trim().slice(0,12)||'周宁', gender:gender==='female'?'male':'female', ageGap:1, emoji:partnerEmoji }; message = `${actor.name} 和 ${person.datePartner.name} 开始交往，恋爱线开启。`; }
+          else { if (choice === 'three') state.life.financialSkill += 1; message = choice === 'three' ? `${actor.name} 礼貌告别，这次没有发展关系。` : `${actor.name} 这次没有发展出恋情。`; }
+        } else if (event.id === 'marriage' || event.id === 'adult-marriage') {
+          if(choice==='four') { person.marriageCooldown=1;person.relationship=Math.min(95,(person.relationship||30)+5); message=`${actor.name}决定先继续相处，暂不办婚礼。`; }
+          else { const plan=choice==='one'?{cost:.2,chance:.64,gain:12,label:'小型婚礼'}:choice==='two'?{cost:2,chance:.72,gain:18,label:'体面婚礼'}:{cost:0,chance:actor.kind==='child'?.52:.48,gain:8,label:'简约登记'};
+            addCash(-plan.cost,-plan.cost);
+            if(rng()<Math.min(.9,plan.chance+(person.relationship||0)/500)) { person.partner={...(person.datePartner||{}),ageGap:actor.kind==='self'?1:0,emoji:person.datePartner?.emoji||'💞'}; person.datePartner=null; person.dating=false; person.relationship=Math.min(100,(person.relationship||30)+plan.gain); message=`双方谈妥了${plan.label}方案，${actor.name}与${person.partner.name}开始共同生活。婚礼支出 ${plan.cost?plan.cost+' 万':'为零'}。`; }
+            else { person.marriageCooldown=1;person.relationship=Math.max(0,(person.relationship||30)+(choice==='two'?-8:3)); message=`双方对${plan.label}方案或婚后安排还没谈拢，暂时继续交往。已支出 ${plan.cost?plan.cost+' 万':'为零'}，可以以后再商量。`; }
+          }
+        } else if (event.id === 'child-care') {
+          person.mood=Math.min(100,(person.mood||60)+8);const costs=[.4,.8,.6,.2];addCash(-costs[['one','two','three','four'].indexOf(choice)],-costs[['one','two','three','four'].indexOf(choice)]);message=`${person.name}开始适应新的生活节奏。`;
+        } else if (event.id === 'child' || event.id === 'adult-family') {
+          const owner=event.id==='child'?(actor.familyOwner||state.life):person;const parentAge=event.id==='child'?(actor.familyOwner?state.age:actor.age):actor.age;const chance=choice==='one'?.62:choice==='two'?.42:0;
+          if(choice==='one') addCash(-.6,-.6);
+          if(choice==='two' && event.id==='adult-family')addCash(-1,-1);
+          if(chance && rng()<chance) { const index=owner.children.length;const child={ id:`child-${state.year}-${index+1}`, bornAt:parentAge, emoji:index%2?'👧🏻':'👶🏻', gender:index%2?'female':'male', name:'', dating:false, datePartner:null, partner:null, children:[], siblings:[], romanceCooldown:0, relationship:0, health:75, skill:0, education:0, mood:60, confidence:50, independent:false };const names=['小安','小禾','小满','星星','知夏','予宁'];const suggestion=names[(index+state.year)%names.length];child.name=(window.prompt('给新成员起个名字',suggestion)||suggestion).trim().slice(0,12)||suggestion;owner.children.push(child);owner.childCooldown=3;state.preferredActorId=`${actor.kind==='self'?'family':actor.id}/${child.id}`;if(event.id==='child')addCash(-1.5,-1.5);message=`${actor.name}与${child.name}迎来新的家庭阶段。`; }
+          else if(chance) { owner.childCooldown=1; message=`${actor.name}这次没有迎来新成员，可以照顾健康与生活安排后再决定。`; }
+          else if(choice==='three') { owner.childCooldown=event.id==='child'?1:3; message=`${actor.name}决定暂缓一年，继续讨论彼此的准备程度。`; }
+          else { owner.childfree=true; message=`${actor.name}和伴侣决定不生育；家庭联系仍会保持。`; }
+        } else if (event.id === 'health') {
+          if (choice === 'one') { addCash(-.4,-.4); person.health = Math.min(100,person.health+12); message = `${actor.name}减少加班并开始运动，健康改善。`; }
+          else if (choice === 'two') { addCash(-.8,-.8); person.insured = true; message = `${actor.name}的保障生效，意外风险下降。`; }
+          else if(choice==='three') { person.health = Math.max(10,person.health-5); message = `${actor.name}生活节奏没有改变，健康略有下降。`; }
+          else { person.health=Math.min(100,person.health+18); state.income=Math.max(0,state.income-3); message=`${actor.name}请假复查并充分休息，健康改善，但短期收入减少。`; }
+        } else if (event.id === 'expense') {
+          if (choice === 'one') { addCash(-1.2,-1.2); message = '你换了新设备，支出 1.2 万。'; }
+          else if (choice === 'two') { addCash(-.4,-.4); message = '维修完成，支出 0.4 万。'; }
+          else if(choice==='three') { if (rng() < .35) { addCash(-2,-2); message = '故障扩大，最终多花了 2 万维修。'; } else message = '问题没有恶化，你暂时保住了现金。'; }
+          else { if(rng()<.7){addCash(-.2,-.2);message='二手设备顺利替代旧设备，支出 0.2 万。';}else{addCash(-.6,-.6);message='二手设备很快出问题，又花了 0.6 万维修。';} }
+        } else if (event.id === 'partner-work') {
+          if (choice === 'one') { if (rng() < .58) { state.income += 24; addCash(1.2,1.2); message = `${actor.name} 的晋升通过，家庭收入提高，但工作压力也增加。`; } else { message = `${actor.name} 没有获得晋升，决定积累经验再试。`; } }
+          else if (choice === 'two') { state.income += 6; person.flexible = true; message = `${actor.name} 协商到更弹性的工时，家庭时间增加。`; }
+          else if(choice==='three') { if(rng()<.5){state.income+=10;person.newJob=true;message=`${actor.name} 找到更合适的新岗位，家庭收入小幅增加。`;}else{message=`${actor.name} 暂时没找到合适机会，决定继续寻找并保留现有工作。`;} }
+          else { message = `${actor.name} 选择留在熟悉的岗位，收入暂时不变。`; }
+        } else if (event.id === 'partner-health') {
+          if (choice === 'one') { addCash(-.8,-.8); person.health = Math.min(100,(person.health || 70)+15); message = `你们为${actor.name}安排了休养和检查，支出 0.8 万。`; }
+          else if (choice === 'two') { addCash(-.2,-.2); person.health = Math.min(100,(person.health || 70)+7); message = `${actor.name} 开始调整作息，状态逐步改善。`; }
+          else if(choice==='three') { person.health = Math.max(10,(person.health || 70)-8); message = `${actor.name} 继续高强度工作，健康风险上升。`; }
+          else { person.health=Math.min(100,(person.health||70)+10); state.life.financialSkill+=1; message=`你分担了家务和照护，${actor.name}获得休息，家庭协作经验增加。`; }
+        } else if (event.id === 'child-interest') {
+          if (choice === 'one') { addCash(-.6,-.6); person.skill=(person.skill||0)+3; person.interest=true; message = `${actor.name} 报名了兴趣课程，能力经验 +3。`; }
+          else if (choice === 'two') { person.skill=(person.skill||0)+1; person.interest=true; message = `${actor.name} 开始自学练习，慢慢积累了经验。`; }
+          else if(choice==='three') { person.mood=Math.max(0,(person.mood||50)-5); message = `你们暂时没有安排课程，${actor.name} 有些失落。`; }
+          else { addCash(-.2,-.2); person.skill=(person.skill||0)+2; person.mood=Math.min(100,(person.mood||50)+8); message=`体验活动让${actor.name}试了新兴趣，家庭支出 0.2 万。`; }
+        } else if (event.id === 'child-school') {
+          if (choice === 'one') { addCash(-.5,-.5); person.education=(person.education||0)+3; message = `${actor.name} 补上了薄弱科目，学习进度提升。`; }
+          else if (choice === 'two') { person.skill=(person.skill||0)+2; person.mood=Math.min(100,(person.mood||50)+8); message = `${actor.name} 在社团里结识朋友，兴趣和状态改善。`; }
+          else if(choice==='three') { person.mood=Math.min(100,(person.mood||50)+10); message = `${actor.name} 得到了休息，压力下降。`; }
+          else { person.education=(person.education||0)+1; person.mood=Math.min(100,(person.mood||50)+5); message=`家校沟通帮助${actor.name}理清了学习计划，压力略有缓解。`; }
+        } else if (event.id === 'child-future') {
+          if (choice === 'one') { addCash(-1.2,-1.2); person.education=(person.education||0)+5; person.path='升学'; message = `${actor.name} 开始准备升学，家庭投入 1.2 万。`; }
+          else if (choice === 'two') { person.path='就业'; if (rng()<.56) { state.income+=8; message = `${actor.name} 找到第一份工作，开始有自己的收入。`; } else message = `${actor.name} 先做了几份短期工作，还在寻找方向。`; }
+          else if(choice==='three') { addCash(-.5,-.5); person.skill=(person.skill||0)+4; person.path='技能'; message = `${actor.name} 参加职业培训，技能经验 +4。`; }
+          else { person.path='实习'; person.skill=(person.skill||0)+2; if(rng()<.35)state.income+=4; message=`${actor.name}开始实习体验，增加了工作经验并找到方向。`; }
+        } else if (event.id === 'child-launch') {
+          if(choice==='one'){if(rng()<.48){addCash(-2,-2);person.independent=true;message=`启动资金让${actor.name}的事业顺利起步，家庭支出 2 万。`;}else{addCash(-2,-2);message=`${actor.name}的创业没有成功，启动资金损失 2 万。`;}}
+          else if(choice==='two'){addCash(-.8,-.8);person.independent=true;message=`你提供了有限的应急金，${actor.name}开始独立生活。`;}
+          else if(choice==='three') {person.independent=true;message=`${actor.name}靠自己的安排搬出去生活。`;}
+          else {person.independent=true;person.skill=(person.skill||0)+1;message=`你们一起列出预算和搬家计划，${actor.name}稳妥地开始独立生活。`;}
+        } else if (event.id === 'housing') {
+          if(choice==='one')addCash(-.6,-.6);else if(choice==='two'){addCash(0,0);state.income+=8;}else if(choice==='three')state.income+=5;else{addCash(-8,0);message=`${actor.name}支付首付 8 万，开始偿还住房贷款。`;}
+          if(!message)message=`${actor.name}选择了新的居住安排，生活预算随之调整。`;
+        } else if (event.id === 'sidework') {
+          if(choice==='one'){if(rng()<.58){addCash(1.8,1.8);message=`${actor.name}完成短期项目，收入增加 1.8 万。`;}else{message=`${actor.name}投入了时间，但项目未能结算报酬。`;}}
+          else if(choice==='two'){addCash(-1.2,-1.2);if(rng()<.42){addCash(2.4,2.4);message=`${actor.name}的小店经营不错，净收益 1.2 万。`;}else message=`网店订单不足，投入暂时没有收回。`;}
+          else if(choice==='three'){addCash(-.5,-.5);person.skill=(person.skill||0)+2;message=`${actor.name}完成进修，技能经验增加。`;}
+          else{person.health=Math.min(100,(person.health||70)+8);message=`${actor.name}留出时间休息，健康状态改善。`;}
+        } else if (event.id === 'emergency') {
+          if(choice==='one')addCash(-1.5,-1.5);else if(choice==='two')addCash(1.5,-.3);else if(choice==='three'){if(rng()<.55)addCash(1.2,1.2);else message=`${actor.name}的理赔申请未通过，仍需自行安排支出。`;}else{addCash(-.5,-.5);}
+          if(!message)message=`${actor.name}处理了突发支出，现金储备发生变化。`;
+        } else if (event.id === 'education') {
+          if(choice==='one'){addCash(-.9,-.9);person.skill=(person.skill||0)+3;}
+          else if(choice==='two'){if(rng()<.52)state.income+=14;}
+          else if(choice==='three'){addCash(-.4,-.4);person.skill=(person.skill||0)+2;}
+          else person.financialSkill=(person.financialSkill||0)+1;
+          message=`${actor.name}完成了职业发展方面的选择。`;
+        } else if (event.id === 'market') {
+          if(choice==='one'){addCash(-1.5,-1.5);if(rng()<.4)addCash(2.4,3.2);else addCash(-1.1,-1.1);}
+          else if(choice==='two'){if(rng()<.5)addCash(.5,.5);else addCash(-.5,-.5);}
+          else if(choice==='three'){if(rng()<.45)addCash(1.4,2);else addCash(-1.2,-1.2);}
+          else{if(rng()<.5)addCash(.3,.3);else addCash(-.2,-.2);}
+          message=`${actor.name}的持仓随市场波动，本次结算不保证盈利。`;
+        }
+        state.cash = Math.max(-50,state.cash); state.netWorth = Math.max(-100,state.netWorth);
+        state.life.recentEvents.push(`${event.id}:${actor.id}`);
+        if(state.life.recentEvents.length>36) state.life.recentEvents.shift();
+        renderPeople(); paint(); return message;
+      }
+      function choose(choice) {
+        const event = state.currentEvent;
+        const result = settleEvent(event,choice);
+        state.eventResolved = true;
+        $('#eventModal').hidden = true; $('#eventDot').textContent = '';
+        $('#liveRegion').textContent = result;
+        showToast(result);
+        state.month += 1;
+        if (state.month > 12) advanceYear();
+        paint();
+        window.setTimeout(() => {
+          if (!state.paused && !state.dead && state.tab === 'event' && state.eventResolved) { state.event += 1; state.currentEvent = null; loadEvent(); }
+        }, 4500);
+      }
+      function switchTab(tab) {
+        state.tab = tab;
+        $$('.nav-btn').forEach(btn => btn.classList.toggle('active', btn.dataset.tab === tab));
+        $('#assetPanel').hidden = tab !== 'asset'; $('#familyPanel').hidden = tab !== 'family'; $('#careerPanel').hidden = tab !== 'career'; $('#companyPanel').hidden = tab !== 'company';
+        const isEvent = tab === 'event';
+        $('#eventModal').hidden = !isEvent || !state.started || state.dead;
+        $('#centerStage').style.visibility = isEvent ? 'visible' : 'hidden';
+        $('.left-rail').style.visibility = isEvent ? 'visible' : 'hidden';
+        if (isEvent && state.started && !state.dead) { $('#eventDot').textContent = '1'; if (state.eventResolved) state.currentEvent = null; loadEvent(); }
+      }
+
+      function renderPeople() {
+        const people = $('#people'); people.innerHTML = '';
+        const roster = $('#familyRoster'); roster.innerHTML = '';
+        const meEmoji = state.setup.gender === 'female' ? '👩‍💼' : state.setup.gender === 'other' ? '🧑‍💻' : '🧑‍💼';
+        const esc=value=>String(value??'').replace(/[&<>"']/g,char=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[char]));
+        const member=(name,age,emoji,role,detail)=>`<div class="person ${role==='伴侣'?'partner':role==='孩子'?'child':''}"><div class="avatar">${emoji||'🧑'}</div><span class="age">${age}</span><div class="person-name">${esc(name)}</div></div>`;
+        const row=(name,age,emoji,detail,role)=>roster.insertAdjacentHTML('beforeend',`<div class="list-row"><span class="list-icon">${emoji}</span><div><b>${esc(name)} · ${age} 岁</b><span>${detail}</span></div></div>`);
+        const rootMember={name:state.life.name||'林然',age:state.age,emoji:meEmoji,role:'',detail:`职业成长 · 每秒 +${Math.max(0,Math.round(state.income*.55))}`};
+        const rootMate=state.life.partner||state.life.datePartner;
+        const mateMember=rootMate?{name:rootMate.name||'周宁',age:rootMate.age||Math.max(18,state.age-(rootMate.ageGap||1)),emoji:rootMate.emoji||'💞',role:'',detail:rootMate.deceased?'已离世':`健康 ${rootMate.health||70}`} : null;
+        people.insertAdjacentHTML('beforeend',`<div class="family-couple">${member(rootMember.name,rootMember.age,rootMember.emoji,'本人',rootMember.detail)}${mateMember?member(mateMember.name,mateMember.age,mateMember.emoji,'伴侣',mateMember.detail):''}</div>`);
+        row(rootMember.name,rootMember.age,rootMember.emoji,rootMember.detail,rootMember.role);
+        if(mateMember)row(mateMember.name,mateMember.age,mateMember.emoji,mateMember.detail,mateMember.role);
+        const descendantsHtml=(children,parentAge,level=1)=>children.map(child=>{const age=Math.max(0,parentAge-child.bornAt);const emoji=age>=18?(child.gender==='female'?'👩‍🎓':'🧑‍🎓'):child.emoji;const stage=age<3?'婴幼儿':age<7?'学龄前':age<13?'儿童':age<18?'青少年':'成年';const mate=child.partner||child.datePartner;const mateAge=mate?.age||Math.max(18,age-(mate?.ageGap||0));const childHtml=`<div class="family-branch"><div class="family-couple">${member(child.name,age,emoji,'孩子',stage)}${mate?member(mate.name||'周宁',mateAge,mate.emoji||'💞','伴侣',child.partner?'配偶':'交往对象'):''}</div>${child.children?.length?`<div class="family-children">${descendantsHtml(child.children,age,level+1)}</div>`:''}</div>`;row(child.name,age,emoji,`${stage}${child.independent?' · 已独立':''}${child.path?` · ${child.path}`:''}`,'');if(mate)row(mate.name||'周宁',mateAge,mate.emoji||'💞',mate.deceased?'已离世':'健康 '+(mate.health||70),'');return childHtml;}).join('');
+        const children=[...descendantsHtml(state.life.children,state.age),...descendantsHtml(state.life.siblings,state.age)];
+        if(children.length)people.insertAdjacentHTML('beforeend',`<div class="family-children">${children.join('')}</div>`);
+        $('#stageEmpty').hidden = people.children.length > 0;
+      }
+      function advanceYear() {
+        if (!state.started || state.dead || state.paused) return;
+        state.year += 1; state.age += 1; state.month = 1;
+        state.life.romanceCooldown = Math.max(0,state.life.romanceCooldown-1);
+        state.life.childCooldown = Math.max(0,state.life.childCooldown-1);
+        const ageDescendants=(children,parentAge)=>children.forEach(child=>{const childAge=parentAge-child.bornAt;child.romanceCooldown=Math.max(0,(child.romanceCooldown||0)-1);child.marriageCooldown=Math.max(0,(child.marriageCooldown||0)-1);child.childCooldown=Math.max(0,(child.childCooldown||0)-1);if(child.partner&&!child.partner.deceased&&childAge-(child.partner.ageGap||0)>=82)child.partner.deceased=true;if(child.children?.length)ageDescendants(child.children,childAge);});
+        ageDescendants(state.life.children,state.age);
+        ageDescendants(state.life.siblings,state.age);
+        state.legacy.forEach(item=>{if(!item.deceased){item.age+=1;if(item.age>=82)item.deceased=true;}});
+        if (state.life.partner) { state.life.partner.age = Math.max(18,state.age - state.life.partner.ageGap); if(state.life.partner.age>=82){state.life.partner.deceased=true;state.life.partnerAge=state.life.partner.age;} }
+        if(state.life.datePartner){state.life.datePartner.age=Math.max(18,state.age-(state.life.datePartner.ageGap||1));if(state.life.datePartner.age>=82)state.life.datePartner.deceased=true;}
+        const sumChildCost=(children,parentAge)=>children.reduce((sum,child)=>{const childAge=parentAge-child.bornAt;return sum+(childAge<18?1.2:0)+(child.children?.length?sumChildCost(child.children,childAge):0);},0);
+        const childCost = sumChildCost(state.life.children,state.age)+sumChildCost(state.life.siblings,state.age);
+        state.cash -= childCost; state.netWorth -= childCost;
+        state.cash += state.income * 0.24; state.netWorth += state.income * 0.34;
+        renderPeople(); paint(); showToast(childCost ? `${state.age} 岁生日：孩子长大了，年度家庭支出 ${childCost.toFixed(1)} 万` : `${state.age} 岁生日：财富与关系都长大了一点`);
+        if (state.age >= 82) { state.dead = true; $('#eventModal').hidden = true; $('#deathModal').hidden = false; const heirs=[...state.life.children,...state.life.siblings].filter(child=>state.age-child.bornAt>=18).sort((a,b)=>a.bornAt-b.bornAt);const heir=heirs[0];state.pendingHeir=heir?{person:heir,age:state.age-heir.bornAt,heirs}:null;if(state.life.partner)state.legacy.push({name:state.life.partner.name,age:state.life.partner.age||Math.max(18,state.age-(state.life.partner.ageGap||0)),generation:state.generation,deceased:!!state.life.partner.deceased});$('#deathTitle').textContent=heir?'人生继续':'这一生走到了终点';$('#rebirthBtn').textContent=heir?'继续':'重新开始';$('#deathCopy').innerHTML=heir?`${state.life.name} 在 ${state.age} 岁离世。<br>${heir.name} ${state.age-heir.bornAt} 岁，人生继续。`:`${state.life.name} 在 ${state.age} 岁离世。<br>没有成年子女可以继续这段人生。`; }
+      }
+      function beginLife() {
+        state.started = true; state.dead = false; state.pendingHeir=null; state.legacy=[]; state.generation=1;state.actorCursor=0;state.preferredActorId=null; state.event = 0; state.currentEvent = null; state.life = newLife();state.life.name=$('#startName').value.trim().slice(0,12)||'林然';state.life.gender=state.setup.gender; state.eventResolved = false; state.age = 22; state.year = 2030; state.month = 7; state.cash = state.setup.difficulty === 'hard' ? 8 : state.setup.difficulty === 'normal' ? 16 : 24.5; state.netWorth = state.cash; state.income = 0; $('#setupModal').hidden = true; $('#deathModal').hidden = true; renderPeople(); paint(); loadEvent(); }
+
+      $$('.setup-option').forEach(btn => btn.addEventListener('click', () => { const group = btn.parentElement.dataset.group; btn.parentElement.querySelectorAll('.setup-option').forEach(item => item.setAttribute('aria-pressed', item === btn ? 'true' : 'false')); state.setup[group] = btn.dataset.value; const difficulty = state.setup.difficulty === 'hard' ? '挑战' : state.setup.difficulty === 'normal' ? '标准' : '轻松'; $('#setupSummary').textContent = `单人开局 · ${difficulty}`; }));
+      $('#startBtn').addEventListener('click', beginLife);
+      $('#rebirthBtn').addEventListener('click', () => { if(state.pendingHeir){const {person,age,heirs}=state.pendingHeir;const siblings=heirs.filter(item=>item!==person);siblings.forEach(sibling=>{sibling.bornAt=age-Math.max(0,state.age-sibling.bornAt);});state.legacy.push({name:state.life.name||'林然',age:state.age,generation:state.generation,deceased:true});if(state.life.partner)state.legacy.push({name:state.life.partner.name,age:state.life.partner.age||Math.max(18,state.age-(state.life.partner.ageGap||0)),generation:state.generation,deceased:!!state.life.partner.deceased});state.generation+=1;state.life={...newLife(),...person,children:person.children||[],siblings,childCooldown:0,childfree:false,recentEvents:[]};state.setup.gender=person.gender||'other';state.age=age;state.pendingHeir=null;state.dead=false;state.event=0;state.currentEvent=null;state.eventResolved=false;$('#deathModal').hidden=true;renderPeople();paint();loadEvent();return;} state.started=false;state.dead=false;state.pendingHeir=null;state.legacy=[];state.generation=1;state.eventResolved=false;state.age=22;state.year=2030;state.month=7;state.cash=0;state.netWorth=0;state.income=0;state.event=0;state.currentEvent=null;state.setup={gender:'male',difficulty:'relaxed'};state.life=newLife();$('#startName').value='林然';$$('.setup-option').forEach(btn=>btn.setAttribute('aria-pressed',btn.dataset.value===state.setup[btn.parentElement.dataset.group]));$('#setupSummary').textContent='单人开局 · 轻松';$('#deathModal').hidden=true;$('#setupModal').hidden=false;renderPeople();paint(); });
+      $$('.choice').forEach(btn => btn.addEventListener('click', () => choose(btn.dataset.choice)));
+      $$('.nav-btn').forEach(btn => btn.addEventListener('click', () => switchTab(btn.dataset.tab)));
+      $$('.rail-btn[data-toast]').forEach(btn => btn.addEventListener('click', () => showToast(btn.dataset.toast)));
+      $('#eventRail').addEventListener('click', () => { state.tab = 'event'; switchTab('event'); loadEvent(); });
+      $('#pauseRail').addEventListener('click', () => { state.paused = !state.paused; showToast(state.paused ? '时间已暂停' : '时间继续流动'); paint(); });
+      $('#advanceRail').addEventListener('click', advanceYear);
+      $('#zoomIn').addEventListener('click', () => { state.zoom = Math.min(100, state.zoom + 10); paint(); });
+      $('#zoomOut').addEventListener('click', () => { state.zoom = Math.max(20, state.zoom - 10); paint(); });
+      $('#resetCanvas').addEventListener('click',()=>{state.canvasX=0;state.canvasY=0;state.zoom=45;paint();});
+      (()=>{const viewport=$('#familyViewport');let drag=null;viewport.addEventListener('pointerdown',event=>{if(event.target.closest('button'))return;drag={x:event.clientX,y:event.clientY,originX:state.canvasX,originY:state.canvasY};viewport.setPointerCapture(event.pointerId);$('#people').classList.add('dragging');});viewport.addEventListener('pointermove',event=>{if(!drag)return;state.canvasX=drag.originX+event.clientX-drag.x;state.canvasY=drag.originY+event.clientY-drag.y;paint();});const stop=()=>{drag=null;$('#people').classList.remove('dragging');};viewport.addEventListener('pointerup',stop);viewport.addEventListener('pointercancel',stop);viewport.addEventListener('wheel',event=>{event.preventDefault();state.zoom=Math.max(20,Math.min(100,state.zoom+(event.deltaY<0?5:-5)));paint();},{passive:false});})();
+      $('#resetBtn').addEventListener('click', () => { state.started = false; state.dead = false; state.eventResolved = false; state.age = 22; state.year = 2030; state.month = 7; state.cash = 0; state.netWorth = 0; state.income = 0; state.event = 0; state.currentEvent = null; state.setup = { gender: 'male', difficulty: 'relaxed' }; state.life = newLife(); $$('.setup-option').forEach(btn => btn.setAttribute('aria-pressed', btn.dataset.value === state.setup[btn.parentElement.dataset.group] ? 'true' : 'false')); $('#setupSummary').textContent = '单人开局 · 轻松'; $('#companyPanel').hidden = true; $('#setupModal').hidden = false; renderPeople(); paint(); showToast('准备开启下一段人生'); });
+      state.started = false; renderPeople(); paint();
+    })();
+  </script>
+</body>
+</html>
